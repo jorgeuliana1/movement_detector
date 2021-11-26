@@ -22,20 +22,15 @@ def load_video_from_argv():
 
     return cv2.VideoCapture(data_path) # Returning the video...
 
-def show_video(video):
+def get_frames(video):
     video_frames = [] # The frames are saved to be used later
-    framerate = 60
     while video.isOpened():
         _, frame = video.read() # Loading each frame
         
         if type(frame) == np.ndarray:
-            cv2.imshow('My video', frame) # Showing each frame of the video
             video_frames.append(frame)
         else:
             break
-        if cv2.waitKey(100 // framerate) == ord('k'):
-            break
-        
 
     video.release()
     cv2.destroyAllWindows()
@@ -56,10 +51,10 @@ def perform_bg_subtraction(video_frames):
         mog_iter = mog2.apply(img) # This works like an "average"
         mogged_frames.append(cv2.cvtColor(mog_iter, cv2.COLOR_BGR2RGB))
 
-    # Retuning the obtained background:
-    return cv2.cvtColor(mog2.getBackgroundImage(), cv2.COLOR_BGR2RGB), mogged_frames
+    # Retuning the filtered frames:
+    return mogged_frames
 
-def play_video(video_frames, framerate, res_func):
+def play_video(video_frames, framerate, res_func = lambda frame : frame):
     for frame in video_frames:
         result = res_func(frame)
         cv2.imshow('My video', result)
@@ -83,10 +78,16 @@ def treat_image(frame):
 def main():
     # Loading and showing the 'raw' video:
     video = load_video_from_argv()
-    video_frames = show_video(video)
+    video_frames = get_frames(video)
 
-    # Using the MOG2 algorithm to obtain the filtered image:
-    background, mogged_frames = perform_bg_subtraction(video_frames)
+    # Using the MOG2 algorithm to obtain the filtered frames:
+    mogged_frames = perform_bg_subtraction(video_frames)
+
+    # Showing the raw video:
+    play_video(
+        video_frames,
+        framerate = 240
+    )
 
     # Showing each 'mogged' frame:
     play_video(
